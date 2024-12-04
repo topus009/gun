@@ -18,7 +18,9 @@
     <script>
         // Подключение Gun с WebRTC
         const gun = Gun({
-            peers: [], // Убираем серверные пиры для чистого P2P
+            peers: [
+                "https://gun-manhattan.herokuapp.com/gun"
+            ], // Убираем серверные пиры для чистого P2P
             radisk: true, // Для локальной синхронизации
             rtc: {
                 iceServers: [
