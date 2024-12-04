@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GunJS Counter with WebRTC</title>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/radisk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/webrtc.js"></script>
+</head>
+<body>
+    <h1>Counter</h1>
+    <div id="counter">0</div>
+    <button id="increment">+</button>
+    <button id="decrement">-</button>
+
+    <script>
+        // Подключение к Gun с WebRTC
+        const gun = Gun({
+            peers: [], // Убираем серверные пиры, оставляем P2P через WebRTC
+            radisk: true // Для локальной синхронизации между вкладками
+        });
+
+        // Создаем "узел" для хранения значения счетчика
+        const counter = gun.get('counter');
+
+        // DOM элементы
+        const counterDisplay = document.getElementById('counter');
+        const incrementBtn = document.getElementById('increment');
+        const decrementBtn = document.getElementById('decrement');
+
+        // Инициализация данных, если их еще нет
+        counter.once(data => {
+            if (!data) {
+                counter.put({ value: 0 }); // Создаем объект с полем value
+            }
+        });
+
+        // Синхронизация данных
+        counter.on(data => {
+            if (data && typeof data.value === 'number') {
+                counterDisplay.textContent = data.value; // Отображаем значение счетчика
+            }
+        });
+
+        // Обработчики кнопок
+        incrementBtn.addEventListener('click', () => {
+            counter.once(data => {
+                const currentValue = (data && data.value) || 0;
+                counter.put({ value: currentValue + 1 }); // Увеличиваем счетчик
+            });
+        });
+
+        decrementBtn.addEventListener('click', () => {
+            counter.once(data => {
+                const currentValue = (data && data.value) || 0;
+                counter.put({ value: currentValue - 1 }); // Уменьшаем счетчик
+            });
+        });
+    </script>
+</body>
+</html>
