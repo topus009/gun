@@ -16,10 +16,17 @@
     <button id="decrement">-</button>
 
     <script>
-        // Подключение к Gun с WebRTC
+        // Подключение Gun с WebRTC
         const gun = Gun({
-            peers: [], // Убираем серверные пиры, оставляем P2P через WebRTC
-            radisk: true // Для локальной синхронизации между вкладками
+            peers: [], // Убираем серверные пиры для чистого P2P
+            radisk: true, // Для локальной синхронизации
+            rtc: {
+                iceServers: [
+                    { urls: "stun:stun.l.google.com:19302" }, // Google STUN
+                    { urls: "stun:stun1.l.google.com:19302" },
+                    { urls: "stun:stun2.l.google.com:19302" }
+                ]
+            }
         });
 
         // Создаем "узел" для хранения значения счетчика
