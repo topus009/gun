@@ -16,24 +16,19 @@
     <button id="decrement">-</button>
 
     <script>
-        // Подключение Gun с WebRTC
+        // Подключение Gun с WebRTC и STUN-серверами
         const gun = Gun({
-            peers: [
-                "https://gun-manhattan.herokuapp.com/gun"
-            ], // Убираем серверные пиры для чистого P2P
-            radisk: true, // Для локальной синхронизации
+            peers: [], // P2P без центрального сервера
             rtc: {
                 iceServers: [
-                    
-                    { urls: "STUN:freestun.net:3478" }, // Google STUN
-                    { url: "STUN:freestun.net:3478" },
-                    { urls: "TURN:freestun.net:3478" },
-                    { url: "TURN:freestun.net:3478" }
+                    { urls: "stun:stun.l.google.com:19302" },
+                    { urls: "stun:stun1.l.google.com:19302" }
                 ]
-            }
+            },
+            radisk: true
         });
 
-        // Создаем "узел" для хранения значения счетчика
+        // Создаем узел для хранения значения счетчика
         const counter = gun.get('counter');
 
         // DOM элементы
@@ -41,11 +36,21 @@
         const incrementBtn = document.getElementById('increment');
         const decrementBtn = document.getElementById('decrement');
 
-        // Инициализация данных, если их еще нет
-        counter.once(data => {
-            if (!data) {
-                counter.put({ value: 0 }); // Создаем объект с полем value
-            }
+        // Гарантируем начальную синхронизацию
+        gun.on('hi', peer => {
+            console.log('Connected to new peer:', peer);
+            // Запрашиваем данные у нового пира
+            counter.once(data => {
+                if (!data || data.value === undefined) {
+                    // Если данных нет, отправляем текущее состояние
+                    console.log('Sending initial counter state');
+                    counter.put({ value: parseInt(counterDisplay.textContent) });
+                } else {
+                    // Если данные есть, синхронизируем их
+                    console.log('Receiving counter state from peer:', data);
+                    counterDisplay.textContent = data.value;
+                }
+            });
         });
 
         // Синхронизация данных
@@ -71,4 +76,5 @@
         });
     </script>
 </body>
+
 </html>
