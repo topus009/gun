@@ -21,48 +21,70 @@
             const incrementBtn = document.getElementById('increment');
             const decrementBtn = document.getElementById('decrement');
 
-            // 1. Создаем экземпляр IPFS
-            statusEl.textContent = 'Starting IPFS...';
-            const ipfs = await IPFS.create({
-                repo: './ipfs-repo-' + Math.random(),
-                EXPERIMENTAL: { pubsub: true }
-            });
+            try {
+                // 1. Создаем экземпляр IPFS
+                statusEl.textContent = 'Starting IPFS...';
+                const ipfs = await IPFS.create({
+                    repo: './ipfs-repo-' + Math.random(),
+                    EXPERIMENTAL: { pubsub: true },
+                    config: {
+                        Addresses: {
+                            Swarm: [
+                                '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star' // WebRTC-трекер
+                            ]
+                        }
+                    }
+                });
 
-            statusEl.textContent = 'IPFS started. Initializing OrbitDB...';
+                statusEl.textContent = 'IPFS started. Initializing OrbitDB...';
 
-            // 2. Создаем OrbitDB
-            const orbitdb = await OrbitDB.createInstance(ipfs);
+                // 2. Создаем OrbitDB
+                const orbitdb = await OrbitDB.createInstance(ipfs);
 
-            // 3. Создаем или подключаемся к базе данных
-            const db = await orbitdb.keyvalue('counter-db'); // Простая key-value база
-            await db.load(); // Загружаем данные из базы
+                // 3. Подключаемся к базе данных
+                const db = await orbitdb.keyvalue('counter-db', {
+                    accessController: {
+                        write: ['*'] // Разрешаем запись всем
+                    }
+                });
+                await db.load(); // Загружаем данные
 
-            statusEl.textContent = 'Connected to database. Syncing...';
+                statusEl.textContent = 'Connected to database. Syncing...';
 
-            // 4. Отображаем текущее значение счетчика
-            const updateCounter = () => {
-                const value = db.get('value') || 0; // Если нет данных, берем 0
-                counterEl.textContent = value;
-            };
-            updateCounter();
-
-            // 5. Подписываемся на изменения в базе
-            db.events.on('replicated', updateCounter);
-
-            // 6. Обработчики кнопок
-            incrementBtn.addEventListener('click', async () => {
-                const currentValue = db.get('value') || 0;
-                await db.put('value', currentValue + 1);
+                // 4. Отображаем текущее значение счетчика
+                const updateCounter = () => {
+                    const value = db.get('value') || 0; // Если нет данных, берем 0
+                    counterEl.textContent = value;
+                };
                 updateCounter();
-            });
 
-            decrementBtn.addEventListener('click', async () => {
-                const currentValue = db.get('value') || 0;
-                await db.put('value', currentValue - 1);
-                updateCounter();
-            });
+                // Подписываемся на изменения
+                db.events.on('replicated', () => {
+                    console.log('Database replicated');
+                    updateCounter();
+                });
 
-            statusEl.textContent = 'Ready!';
+                db.events.on('write', () => {
+                    console.log('Database write event');
+                    updateCounter();
+                });
+
+                // 5. Обработчики кнопок
+                incrementBtn.addEventListener('click', async () => {
+                    const currentValue = db.get('value') || 0;
+                    await db.put('value', currentValue + 1); // Увеличиваем счетчик
+                });
+
+                decrementBtn.addEventListener('click', async () => {
+                    const currentValue = db.get('value') || 0;
+                    await db.put('value', currentValue - 1); // Уменьшаем счетчик
+                });
+
+                statusEl.textContent = 'Ready!';
+            } catch (error) {
+                console.error('Error initializing OrbitDB:', error);
+                statusEl.textContent = 'Error initializing OrbitDB.';
+            }
         })();
     </script>
 </body>
