@@ -3,78 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GunJS Counter with WebRTC</title>
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/radisk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/webrtc.js"></script>
+    <title>OrbitDB Counter</title>
+    <script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/orbit-db/dist/orbitdb.min.js"></script>
 </head>
 <body>
-    <h1>Counter</h1>
+    <h1>OrbitDB Counter</h1>
     <div id="counter">0</div>
     <button id="increment">+</button>
     <button id="decrement">-</button>
+    <p id="status">Connecting...</p>
 
     <script>
-        // Подключение Gun с WebRTC и STUN-серверами
-        const gun = Gun({
-            peers: [], // P2P без центрального сервера
-            rtc: {
-                iceServers: [
-                    { urls: "stun:stun.l.google.com:19302" },
-                    { urls: "stun:stun1.l.google.com:19302" }
-                ]
-            },
-            radisk: true
-        });
+        (async () => {
+            const statusEl = document.getElementById('status');
+            const counterEl = document.getElementById('counter');
+            const incrementBtn = document.getElementById('increment');
+            const decrementBtn = document.getElementById('decrement');
 
-        // Создаем узел для хранения значения счетчика
-        const counter = gun.get('counter');
-
-        // DOM элементы
-        const counterDisplay = document.getElementById('counter');
-        const incrementBtn = document.getElementById('increment');
-        const decrementBtn = document.getElementById('decrement');
-
-        // Гарантируем начальную синхронизацию
-        gun.on('hi', peer => {
-            console.log('Connected to new peer:', peer);
-            // Запрашиваем данные у нового пира
-            counter.once(data => {
-                if (!data || data.value === undefined) {
-                    // Если данных нет, отправляем текущее состояние
-                    console.log('Sending initial counter state');
-                    counter.put({ value: parseInt(counterDisplay.textContent) });
-                } else {
-                    // Если данные есть, синхронизируем их
-                    console.log('Receiving counter state from peer:', data);
-                    counterDisplay.textContent = data.value;
-                }
+            // 1. Создаем экземпляр IPFS
+            statusEl.textContent = 'Starting IPFS...';
+            const ipfs = await IPFS.create({
+                repo: './ipfs-repo-' + Math.random(),
+                EXPERIMENTAL: { pubsub: true }
             });
-        });
 
-        // Синхронизация данных
-        counter.on(data => {
-            if (data && typeof data.value === 'number') {
-                counterDisplay.textContent = data.value; // Отображаем значение счетчика
-            }
-        });
+            statusEl.textContent = 'IPFS started. Initializing OrbitDB...';
 
-        // Обработчики кнопок
-        incrementBtn.addEventListener('click', () => {
-            counter.once(data => {
-                const currentValue = (data && data.value) || 0;
-                counter.put({ value: currentValue + 1 }); // Увеличиваем счетчик
+            // 2. Создаем OrbitDB
+            const orbitdb = await OrbitDB.createInstance(ipfs);
+
+            // 3. Создаем или подключаемся к базе данных
+            const db = await orbitdb.keyvalue('counter-db'); // Простая key-value база
+            await db.load(); // Загружаем данные из базы
+
+            statusEl.textContent = 'Connected to database. Syncing...';
+
+            // 4. Отображаем текущее значение счетчика
+            const updateCounter = () => {
+                const value = db.get('value') || 0; // Если нет данных, берем 0
+                counterEl.textContent = value;
+            };
+            updateCounter();
+
+            // 5. Подписываемся на изменения в базе
+            db.events.on('replicated', updateCounter);
+
+            // 6. Обработчики кнопок
+            incrementBtn.addEventListener('click', async () => {
+                const currentValue = db.get('value') || 0;
+                await db.put('value', currentValue + 1);
+                updateCounter();
             });
-        });
 
-        decrementBtn.addEventListener('click', () => {
-            counter.once(data => {
-                const currentValue = (data && data.value) || 0;
-                counter.put({ value: currentValue - 1 }); // Уменьшаем счетчик
+            decrementBtn.addEventListener('click', async () => {
+                const currentValue = db.get('value') || 0;
+                await db.put('value', currentValue - 1);
+                updateCounter();
             });
-        });
+
+            statusEl.textContent = 'Ready!';
+        })();
     </script>
 </body>
-
 </html>
