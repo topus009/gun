@@ -30,7 +30,11 @@
                     config: {
                         Addresses: {
                             Swarm: [
-                                '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star' // WebRTC-трекер
+                                // Используем WebRTC-star для связи между узлами
+                                // '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+                                // '/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+                                '/dns4/star-signal.cloud.ipfs.team/tcp/443/wss/p2p-webrtc-star'
+
                             ]
                         }
                     }
