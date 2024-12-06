@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OrbitDB Counter</title>
-    <script src="https://unpkg.com/ipfs-core@0.12.2/dist/index.min.js"></script>
-    <script src="https://unpkg.com/orbit-db@0.27.6/dist/orbitdb.min.js"></script>
+    <title>Helia + OrbitDB Counter</title>
+    <script src="https://unpkg.com/@helia/core"></script>
+    <script src="https://unpkg.com/@helia/wrtc/client"></script>
+    <script src="https://unpkg.com/@orbitdb/orbitdb"></script>
 </head>
 <body>
-    <h1>OrbitDB Counter</h1>
+    <h1>Helia + OrbitDB Counter</h1>
     <div id="counter">0</div>
     <button id="increment">+</button>
     <button id="decrement">-</button>
@@ -22,45 +23,46 @@
             const decrementBtn = document.getElementById('decrement');
 
             try {
-                // 1. Создаем экземпляр IPFS
-                statusEl.textContent = 'Starting IPFS...';
-                const ipfs = await window.IpfsCore.create({
-                    repo: './ipfs-repo-' + Math.random(),
-                    EXPERIMENTAL: { pubsub: true },
-                    config: {
-                        Addresses: {
-                            Swarm: [
+                // 1. Инициализация Helia
+                statusEl.textContent = 'Starting Helia...';
+
+                const helia = await Helia.createHelia({
+                    libp2p: await HeliaLibp2p.createLibp2p({
+                        addresses: {
+                            listen: [
                                 '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
                                 '/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
                             ]
                         }
-                    }
+                    })
                 });
 
-                statusEl.textContent = 'IPFS started. Initializing OrbitDB...';
+                const ipfs = helia.blockstore;
 
-                // 2. Создаем OrbitDB
+                statusEl.textContent = 'Helia started. Initializing OrbitDB...';
+
+                // 2. Инициализация OrbitDB
                 const orbitdb = await OrbitDB.createInstance(ipfs);
 
-                // 3. Подключаемся к базе данных
+                // 3. Подключение к базе данных
                 const db = await orbitdb.keyvalue('counter-db', {
                     accessController: {
                         type: 'orbitdb',
-                        write: ['*'], // Разрешаем запись всем
+                        write: ['*'], // Разрешить запись всем
                     }
                 });
-                await db.load(); // Загружаем данные
 
+                await db.load(); // Загружаем данные
                 statusEl.textContent = 'Connected to database. Syncing...';
 
-                // 4. Отображаем текущее значение счетчика
+                // 4. Отображение данных
                 const updateCounter = () => {
-                    const value = db.get('value') || 0; // Если нет данных, берем 0
+                    const value = db.get('value') || 0; // Если данных нет, берём 0
                     counterEl.textContent = value;
                 };
                 updateCounter();
 
-                // Подписываемся на изменения
+                // Подписка на изменения
                 db.events.on('replicated', () => {
                     console.log('Database replicated');
                     updateCounter();
@@ -74,18 +76,18 @@
                 // 5. Обработчики кнопок
                 incrementBtn.addEventListener('click', async () => {
                     const currentValue = db.get('value') || 0;
-                    await db.put('value', currentValue + 1); // Увеличиваем счетчик
+                    await db.put('value', currentValue + 1);
                 });
 
                 decrementBtn.addEventListener('click', async () => {
                     const currentValue = db.get('value') || 0;
-                    await db.put('value', currentValue - 1); // Уменьшаем счетчик
+                    await db.put('value', currentValue - 1);
                 });
 
                 statusEl.textContent = 'Ready!';
             } catch (error) {
-                console.error('Error initializing OrbitDB:', error);
-                statusEl.textContent = 'Error initializing OrbitDB.';
+                console.error('Error initializing Helia or OrbitDB:', error);
+                statusEl.textContent = 'Error initializing Helia or OrbitDB.';
             }
         })();
     </script>
