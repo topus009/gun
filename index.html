@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OrbitDB Counter</title>
-    <script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/orbit-db/dist/orbitdb.min.js"></script>
+    <script src="https://unpkg.com/ipfs-core@0.12.2/dist/index.min.js"></script>
+    <script src="https://unpkg.com/orbit-db@0.27.6/dist/orbitdb.min.js"></script>
 </head>
 <body>
     <h1>OrbitDB Counter</h1>
@@ -30,11 +30,8 @@
                     config: {
                         Addresses: {
                             Swarm: [
-                                // Используем WebRTC-star для связи между узлами
-                                // '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-                                // '/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-                                '/dns4/star-signal.cloud.ipfs.team/tcp/443/wss/p2p-webrtc-star'
-
+                                '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+                                '/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
                             ]
                         }
                     }
@@ -48,7 +45,8 @@
                 // 3. Подключаемся к базе данных
                 const db = await orbitdb.keyvalue('counter-db', {
                     accessController: {
-                        write: ['*'] // Разрешаем запись всем
+                        type: 'orbitdb',
+                        write: ['*'], // Разрешаем запись всем
                     }
                 });
                 await db.load(); // Загружаем данные
