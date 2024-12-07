@@ -3,93 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helia + OrbitDB Counter</title>
-    <script src="https://unpkg.com/@helia/core"></script>
-    <script src="https://unpkg.com/@helia/wrtc/client"></script>
-    <script src="https://unpkg.com/@orbitdb/orbitdb"></script>
+    <title>lalala</title>
 </head>
 <body>
-    <h1>Helia + OrbitDB Counter</h1>
-    <div id="counter">0</div>
-    <button id="increment">+</button>
-    <button id="decrement">-</button>
-    <p id="status">Connecting...</p>
-
-    <script>
-        (async () => {
-            const statusEl = document.getElementById('status');
-            const counterEl = document.getElementById('counter');
-            const incrementBtn = document.getElementById('increment');
-            const decrementBtn = document.getElementById('decrement');
-
-            try {
-                // 1. Инициализация Helia
-                statusEl.textContent = 'Starting Helia...';
-
-                const helia = await Helia.createHelia({
-                    libp2p: await HeliaLibp2p.createLibp2p({
-                        addresses: {
-                            listen: [
-                                '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-                                '/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
-                            ]
-                        }
-                    })
-                });
-
-                const ipfs = helia.blockstore;
-
-                statusEl.textContent = 'Helia started. Initializing OrbitDB...';
-
-                // 2. Инициализация OrbitDB
-                const orbitdb = await OrbitDB.createInstance(ipfs);
-
-                // 3. Подключение к базе данных
-                const db = await orbitdb.keyvalue('counter-db', {
-                    accessController: {
-                        type: 'orbitdb',
-                        write: ['*'], // Разрешить запись всем
-                    }
-                });
-
-                await db.load(); // Загружаем данные
-                statusEl.textContent = 'Connected to database. Syncing...';
-
-                // 4. Отображение данных
-                const updateCounter = () => {
-                    const value = db.get('value') || 0; // Если данных нет, берём 0
-                    counterEl.textContent = value;
-                };
-                updateCounter();
-
-                // Подписка на изменения
-                db.events.on('replicated', () => {
-                    console.log('Database replicated');
-                    updateCounter();
-                });
-
-                db.events.on('write', () => {
-                    console.log('Database write event');
-                    updateCounter();
-                });
-
-                // 5. Обработчики кнопок
-                incrementBtn.addEventListener('click', async () => {
-                    const currentValue = db.get('value') || 0;
-                    await db.put('value', currentValue + 1);
-                });
-
-                decrementBtn.addEventListener('click', async () => {
-                    const currentValue = db.get('value') || 0;
-                    await db.put('value', currentValue - 1);
-                });
-
-                statusEl.textContent = 'Ready!';
-            } catch (error) {
-                console.error('Error initializing Helia or OrbitDB:', error);
-                statusEl.textContent = 'Error initializing Helia or OrbitDB.';
-            }
-        })();
-    </script>
+    <h1>lalala</h1>
 </body>
 </html>
